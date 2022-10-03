@@ -1,23 +1,86 @@
-import logo from './logo.svg';
+
 import './App.css';
+import React, {useState} from 'react'  
+import LoginForm from './components/LoginForm'
+import Home from './components/Home'
+import VerificationForm from './components/VerificationForm'
+import {Route, Link, Routes} from 'react-router-dom';
+import { properties } from './properties.js';
+import Axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import Cookies from 'universal-cookie';
+
+
 
 function App() {
+
+
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState({email: "", username: "", description: ""})
+  const navigate = useNavigate();
+  const cookies = new Cookies();
+
+  const Login = details => {
+    const url = properties.serverUrl + '/login';
+    Axios.post(url, {
+      email: details.email,
+      password: details.password
+    })
+        .then(res => {
+          setError("");
+          
+          cookies.set('email', res.data.data.email);
+          cookies.set('two_factor_token', res.data.data.two_factor_token);
+          navigate('/verification');
+        })
+        .catch(function (error) {
+         console.log(error.response.data._error.msg);
+         setError(error.response.data._error.msg);
+        })
+
+  }
+
+  const Verify = details => {
+    const url = properties.serverUrl + '/2factor';
+    Axios.post(url, {
+      code: details.code,
+      email: cookies.get('email'),
+      two_factor_token: cookies.get('two_factor_token')
+    })
+        .then(res => {
+          setError("");
+          
+          cookies.set('email', res.data.data.email);
+          cookies.set('access_token', res.data.data.token);
+          setInfo({...info, email: res.data.data.email })
+          navigate('/home');
+        })
+        .catch(function (error) {
+         console.log(error.response.data._error.msg);
+         setError(error.response.data._error.msg);
+        })
+
+
+    console.log(details);
+  }
+
+  const Logout = () => {
+    console.log("logout");
+  }
+
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Routes>
+      <Route exact path="/" element={<LoginForm Login={Login} error={error}/>} />
+
+      <Route exact path="/verification" element={<VerificationForm Verify={Verify} error={error}/>} />
+      <Route exact path="/home" element={<Home info={info}/>} />
+
+    
+      </Routes>
+     
+      
     </div>
   );
 }
