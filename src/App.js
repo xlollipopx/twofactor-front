@@ -16,7 +16,8 @@ function App() {
 
 
   const [error, setError] = useState("");
-  const [info, setInfo] = useState({email: "", username: "", description: ""})
+  const [info, setInfo] = useState({email: "", username: "", description: ""});
+  const [notes, setNotes] = useState([]);
   const navigate = useNavigate();
   const cookies = new Cookies();
 
@@ -49,11 +50,10 @@ function App() {
     })
         .then(res => {
           setError("");
-          
+          const accessToken = res.data.data.token;
           cookies.set('email', res.data.data.email);
-          cookies.set('access_token', res.data.data.token);
-          setInfo({...info, email: res.data.data.email })
-          navigate('/home');
+          cookies.set('access_token', accessToken);
+          getNotes();
         })
         .catch(function (error) {
          console.log(error.response.data._error.msg);
@@ -64,8 +64,21 @@ function App() {
     console.log(details);
   }
 
-  const Logout = () => {
-    console.log("logout");
+  const getNotes = () => {
+    const url = properties.serverUrl + '/home';
+    Axios.get(url, 
+
+     {
+      withCredentials: true,
+      headers: {'Access-Control-Allow-Credentials': true, 'Content-Type': 'application/json'}
+     })
+        .then(res => {
+          
+          setInfo({...info, username: res.data.data.username, email: res.data.data.email, description: res.data.data.description});
+          setNotes(res.data.data.notes);
+          navigate('/home');
+        });
+
   }
 
 
@@ -75,7 +88,7 @@ function App() {
       <Route exact path="/" element={<LoginForm Login={Login} error={error}/>} />
 
       <Route exact path="/verification" element={<VerificationForm Verify={Verify} error={error}/>} />
-      <Route exact path="/home" element={<Home info={info}/>} />
+      <Route exact path="/home" element={<Home info={info} notes={notes}/>} />
 
     
       </Routes>
