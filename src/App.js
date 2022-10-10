@@ -2,13 +2,17 @@
 import './App.css';
 import React, {useState} from 'react'  
 import LoginForm from './components/LoginForm'
+import SignupForm from './components/SignupForm'
 import Home from './components/Home'
 import VerificationForm from './components/VerificationForm'
+import VerificationSignupForm from './components/VerificationSignupForm'
+
 import {Route, Link, Routes} from 'react-router-dom';
 import { properties } from './properties.js';
 import Axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'universal-cookie';
+import TodoForm from './components/TodoForm';
 
 
 
@@ -16,13 +20,12 @@ function App() {
 
 
   const [error, setError] = useState("");
-  const [info, setInfo] = useState({email: "", username: "", description: ""});
-  const [notes, setNotes] = useState([]);
+  const [signupError, setSignupError] = useState("");
   const navigate = useNavigate();
   const cookies = new Cookies();
 
   const Login = details => {
-    const url = properties.serverUrl + '/login';
+    const url = '/login';
     Axios.post(url, {
       email: details.email,
       password: details.password
@@ -41,8 +44,30 @@ function App() {
 
   }
 
+  const Signup = details => {
+    const url = '/signup';
+    Axios.post(url, {
+      username: details.username,
+      email: details.email,
+      password: details.password
+    })
+        .then(res => {
+          setSignupError("");
+          setError("");
+          
+          cookies.set('email', res.data.data.email);
+          cookies.set('access_token', res.data.data.token);
+          navigate('/verification-signup');
+        })
+        .catch(function (error) {
+         console.log(error.response.data._error.msg);
+         setSignupError(error.response.data._error.msg);
+        })
+
+  }
+
   const Verify = details => {
-    const url = properties.serverUrl + '/2factor';
+    const url = '/2factor';
     Axios.post(url, {
       code: details.code,
       email: cookies.get('email'),
@@ -50,50 +75,50 @@ function App() {
     })
         .then(res => {
           setError("");
+          setSignupError("");
           const accessToken = res.data.data.token;
           cookies.set('email', res.data.data.email);
           cookies.set('access_token', accessToken);
-          getNotes();
+          navigate('/home');
         })
         .catch(function (error) {
          console.log(error.response.data._error.msg);
          setError(error.response.data._error.msg);
         })
-
-
-    console.log(details);
   }
 
-  const getNotes = () => {
-    const url = properties.serverUrl + '/home';
-    Axios.get(url, 
-
-     {
-      withCredentials: true,
-      headers: {'Access-Control-Allow-Credentials': true, 'Content-Type': 'application/json'}
-     })
+  const VerifySignup = details => {
+    const url = '/verification';
+    Axios.post(url,
+      {
+        code: details.code
+      },
+       {
+      headers: {
+        Accept: '*/*',
+        'Content-Type': 'application/json',
+    }
+    })
         .then(res => {
-          
-          setInfo({...info, username: res.data.data.username, email: res.data.data.email, description: res.data.data.description});
-          setNotes(res.data.data.notes);
+          setError("");
+          setSignupError("");
           navigate('/home');
-        });
-
+        })
+        .catch(function (error) {
+         console.log(error.response.data._error.msg);
+         setError(error.response.data._error.msg);
+        })
   }
-
 
   return (
-    <div className="App">
+    <div>
       <Routes>
       <Route exact path="/" element={<LoginForm Login={Login} error={error}/>} />
-
+      <Route exact path="/signup" element={<SignupForm Signup={Signup} signupError={signupError}/>} />
       <Route exact path="/verification" element={<VerificationForm Verify={Verify} error={error}/>} />
-      <Route exact path="/home" element={<Home info={info} notes={notes}/>} />
-
-    
-      </Routes>
-     
-      
+      <Route exact path="/home" element={<Home/>} />
+      <Route exact path="/verification-signup" element={<VerificationSignupForm VerifySignup={VerifySignup} error={error}/>} />
+      </Routes>  
     </div>
   );
 }

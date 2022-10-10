@@ -1,13 +1,13 @@
 import React from 'react'
 import  {useState} from 'react'  
 
-function VerificationForm({Verify, error}) {
+function VerificationSignupForm({VerifySignup, error}) {
 
-    const [details, setDetails] = useState({code:"", email:"", twoFactorToken: ""});
+    const [details, setDetails] = useState({code:""});
 
     const submitHandler = e => {
         e.preventDefault();
-        Verify(details);
+        VerifySignup(details);
     }
 
     return (
@@ -28,4 +28,4 @@ function VerificationForm({Verify, error}) {
     )
 }
 
-export default VerificationForm;
+export default VerificationSignupForm;
